@@ -6,6 +6,8 @@ interface AxiosErrorResponse {
 }
 
 let cookies = parseCookies()
+let isRefreshing = false;
+let failedRequestQueue = [];
 
 export const api = axios.create({
     baseURL: 'http://localhost:3333',
@@ -24,25 +26,38 @@ api.interceptors.response.use(response => {
 
             const { 'nextauth.refreshToken': refreshToken } = cookies;
 
-            api.post('/refresh', {
-                refreshToken,
-            }).then(response => {
-                const { token } = response.data;
+            if (!isRefreshing) {
+                isRefreshing = true;
+                api.post('/refresh', {
+                    refreshToken,
+                }).then(response => {
+                    const { token } = response.data;
 
-                setCookie(undefined, 'nextauth.token', token, {
-                    maxAge: 60 * 60 * 24 * 30, //? 30 dias
-                    path: '/' //? qualquer endereco da aplicacao vai ter acesso
+                    setCookie(undefined, 'nextauth.token', token, {
+                        maxAge: 60 * 60 * 24 * 30, //? 30 dias
+                        path: '/' //? qualquer endereco da aplicacao vai ter acesso
+                    })
+
+                    setCookie(undefined, 'nextauth.refreshToken', response.data.refreshToken, {
+                        maxAge: 60 * 60 * 24 * 30, //? 30 dias
+                        path: '/' //? qualquer endereco da aplicacao vai ter acesso
+                    })
+
+                    api.defaults.headers['Authorization'] = `Bearer ${token}`
+                    return new Promise((resolve, reject) => {
+                        failedRequestQueue.push({
+                            onSuccess: (token: string) => {
+
+                            },
+                            onFailure: () => {
+
+                            }
+                        })
+                    })
+
                 })
+            }
 
-                setCookie(undefined, 'nextauth.refreshToken', response.data.refreshToken, {
-                    maxAge: 60 * 60 * 24 * 30, //? 30 dias
-                    path: '/' //? qualquer endereco da aplicacao vai ter acesso
-                })
-
-                api.defaults.headers['Authorization'] = `Bearer ${token}`
-
-
-            })
         } else {
             //deslogar o usuario
 
