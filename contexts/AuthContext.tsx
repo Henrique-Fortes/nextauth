@@ -26,6 +26,13 @@ type AuthProviderProps = {
 
 export const AuthContext = createContext({} as AuthContextData);
 
+export function signOut() {
+	destroyCookie(undefined, 'nextauth.token')
+	destroyCookie(undefined, 'nextauth.refreshToken')
+
+	Router.push('/')
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
 	const [user, setUser] = useState<User>()
 	const isAuthenticated = !!user;
@@ -40,10 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				setUser({ email, permissions, roles })
 			})
 				.catch(() => {
-					destroyCookie(undefined, 'nextauth.token')
-					destroyCookie(undefined, 'nextauth.refreshToken')
-
-					Router.push('/')
+					signOut()
 				})
 		}
 	}, [])
